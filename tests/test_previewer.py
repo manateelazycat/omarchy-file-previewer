@@ -62,6 +62,7 @@ class InstallTest(unittest.TestCase):
                                check=True, capture_output=True)
             self.assertIn("viewer.py", desktop.read_text())
             self.assertIn("# User setting", desktop.read_text())
+            self.assertIn("Exec=/usr/bin/gjs -m ", service.read_text())
             subprocess.run([sys.executable, str(ROOT / "install.py"), "--uninstall"],
                            env=env, check=True, capture_output=True)
             self.assertEqual(desktop.read_bytes(), original)

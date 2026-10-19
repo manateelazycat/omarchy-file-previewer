@@ -61,10 +61,10 @@ def key(value):
     time.sleep(0.2)
 
 
-def preview(path, toggle=False):
+def preview(path, toggle=False, parent=""):
     run(["gdbus", "call", "--session", "--dest", "org.gnome.NautilusPreviewer",
          "--object-path", "/org/gnome/NautilusPreviewer", "--method",
-         "org.gnome.NautilusPreviewer2.ShowFile", path.as_uri(), "",
+         "org.gnome.NautilusPreviewer2.ShowFile", path.as_uri(), parent,
          "true" if toggle else "false", ""])
 
 
@@ -239,8 +239,19 @@ def inside():
     key("Escape")
     wait_for("desktop image closes", lambda: image_window() is None)
     print("PASS: double-click desktop entry uses the same imv behavior", flush=True)
+    preview(first, parent="wayland:test-parent")
+    first_preview = wait_for("DBus ShowFile opens image", image_window)
+    preview(folder / "2.png")
+    wait_for("DBus ShowFile switches images", lambda: image_window() and
+             image_window()["pid"] != first_preview["pid"])
+    preview(folder / "note.txt")
+    wait_for("image-to-text Sushi preview", lambda: next((w for w in clients()
+             if w["class"] == "org.gnome.NautilusPreviewer"), None))
+    wait_for("image closes on text preview", lambda: image_window() is None)
     preview(first)
-    wait_for("DBus ShowFile opens image", image_window)
+    wait_for("text-to-image imv preview", image_window)
+    wait_for("Sushi closes on image preview", lambda: not any(w["class"] == "org.gnome.NautilusPreviewer"
+             for w in clients()))
     preview(first, toggle=True)
     wait_for("DBus ShowFile toggle closes image", lambda: image_window() is None)
     preview(folder / "note.txt")

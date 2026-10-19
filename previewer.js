@@ -1,17 +1,20 @@
-#!/usr/bin/gjs
+#!/usr/bin/gjs -m
 // SPDX-License-Identifier: GPL-3.0-only
 // Copyright (C) 2026 Andy Stewart
 // Extend the installed Sushi service instead of duplicating its D-Bus protocol
-// or its non-image renderers. Sushi 50 supplies NautilusPreviewer2 and tokens.
+// or its non-image renderers. Sushi 51 supplies NautilusPreviewer2 and tokens.
 // GJS normally derives the resource basename from the executable filename.
 // Our entry point has a different filename, but uses Sushi's original resources.
+import {programInvocationName, programArgs} from 'system';
+import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+
 imports.package._findEffectiveEntryPointName = () => 'org.gnome.NautilusPreviewer';
 imports.package.init({
-    name: 'sushi', version: '50.0', prefix: '/usr', libdir: '/usr/lib',
+    name: 'sushi', version: '51.2', prefix: '/usr', libdir: '/usr/lib',
 });
-const Main = imports.ui.main;
-const {Gio, GLib} = imports.gi;
-const Application = imports.ui.application.Application;
+const {main} = await import('resource:///org/gnome/NautilusPreviewer/js/core/main.js');
+const {Application} = await import('resource:///org/gnome/NautilusPreviewer/js/core/application.js');
 const originalShowFile = Application.prototype.showFile;
 const originalClose = Application.prototype.close;
 const pluginDir = GLib.path_get_dirname(GLib.canonicalize_filename(
@@ -52,7 +55,8 @@ Application.prototype.showFile = function (uri, parent, toggle, token = '') {
     this._imageProcess = process;
     this._imageUri = uri;
     this.hold();
-    this.updateParentHandle(parent);
+    // Sushi's updateParentHandle() requires a Sushi window, which imv does not create.
+    this._skeleton2.impl.emit_property_changed('ParentHandle', new GLib.Variant('s', parent));
     notifyVisible(this, true);
     process.wait_async(null, (proc, result) => {
         proc.wait_finish(result);
@@ -70,4 +74,4 @@ Application.prototype.close = function () {
     return originalClose.call(this);
 };
 
-imports.package.run(Main);
+await main([programInvocationName, ...programArgs]);

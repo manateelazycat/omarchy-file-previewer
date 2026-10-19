@@ -63,7 +63,7 @@ def install():
     if count != 1:
         raise RuntimeError("imv.desktop has no Exec entry")
     service = ("[D-BUS Service]\nName=org.gnome.NautilusPreviewer\n"
-               f"Exec=/usr/bin/gjs {quoted(ROOT / 'previewer.js')}\n")
+               f"Exec=/usr/bin/gjs -m {quoted(ROOT / 'previewer.js')}\n")
     files = {desktop_path: desktop.encode(),
              DATA / "dbus-1/services/org.gnome.NautilusPreviewer.service": service.encode()}
     for path, data in files.items():
